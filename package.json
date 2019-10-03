@@ -2,10 +2,13 @@
   "name": "promptjs",
   "version": "1.0.0",
   "description": "A command line interface made in NodeJS",
+  "main": "index.js",
   "bin": {
     "promptjs": "bin/promptjs"
   },
   "author": "S0n1c",
   "license": "ISC",
-  "dependencies": {}
+  "dependencies": {
+    "chalk": "^2.4.2"
+  }
 }
