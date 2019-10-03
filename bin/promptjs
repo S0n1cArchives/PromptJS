@@ -2,22 +2,27 @@
 
 const process = require('process');
 const readline = require('readline');
-const rl = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout,
-    prompt: `${process.env.USER}@promptjs:~#`
-});
+
 
 class PromptJS {
     constructor() {
         this.name = "PromptJS";
         this.version = "1.0";
+        this.user = {
+            username: process.env.USER || process.env.USERNAME.toLowerCase()
+        }
+        this.rl = readline.createInterface({
+            input: process.stdin,
+            output: process.stdout,
+            prompt: `${this.user.username}@promptjs:~#`
+        });
         console.log(`${this.name} v${this.version}`)
+       // console.log(process.env);
 
 
-        rl.prompt();
+        this.rl.prompt();
 
-        rl.on('line', (line) => {
+        this.rl.on('line', (line) => {
             const cmd = line.trim();
             switch (line.trim()) {
                 case '.quit':
