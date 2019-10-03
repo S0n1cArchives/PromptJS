@@ -14,7 +14,7 @@ class PromptJS {
         this.rl = readline.createInterface({
             input: process.stdin,
             output: process.stdout,
-            prompt: `${this.user.username}@promptjs:~#`
+            prompt: `${this.user.username}@promptjs:~# `
         });
         console.log(`${this.name} v${this.version}`)
        // console.log(process.env);
@@ -33,7 +33,7 @@ class PromptJS {
                     this.parseCmd(cmd);
                     break;
             }
-            rl.prompt();
+            this.rl.prompt();
         }).on('close', () => {
            // console.log()
             console.log('\nHave a great day!');
