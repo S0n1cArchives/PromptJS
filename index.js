@@ -69,9 +69,16 @@ class PromptJS {
             const commands = [];
 
             splitCommands.forEach(com => {
-                //console.log(com);
-                const parts = com.split(/\s/g);
-                const command = parts[0];
+                if(com.includes(`"`)) {
+                    var parts = com.split(`"`).filter(str => str.trim().length > 0) 
+                   // console.log(parts);
+                } else {
+                    var parts = com.split(/\s/g);
+                }
+
+             
+                
+                const command = parts[0].trim();
                 var args = parts.splice(1, parts.length);
               //  console.log(args)
                 args = args.filter((arg) => {
