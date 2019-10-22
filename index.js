@@ -1,6 +1,9 @@
 const process = require('process');
 const readline = require('readline');
 const chalk = require("chalk");
+const fs = require("fs")
+const path = require("path")
+var cmdsDir = fs.readdirSync(path.join(__dirname, "commands"))
 
 class PromptJS {
     constructor() {
@@ -9,8 +12,22 @@ class PromptJS {
         this.user = {
             username: process.env.USER || process.env.USERNAME.toLowerCase()
         }
+        this.commands = this.loadCommands();
+
+        fs.watch(path.join(__dirname, "commands"), (eventType, filename) => {
+           // console.log("CHANGE! UPDATING COMMANDS")
+            this.commands = [];
+            this.requireUncached(path.join(__dirname, `commands/${filename}`))
+            this.commands = this.loadCommands();
+           
+        })
+
+
+        //console.log(this.commands)
         this.pwd = `/`
         this.prompt = "";
+        this.fs = fs;
+        this.path = path;
         this.rl = readline.createInterface({
             input: process.stdin,
             output: process.stdout,
@@ -18,6 +35,7 @@ class PromptJS {
         });
         this.setprompt();
         console.log(`${this.name} v${this.version}`)
+        
         //console.log(this.rl)
        // console.log(process.env);
 
@@ -33,7 +51,23 @@ class PromptJS {
                     break;
                 default:
                     const result = this.parseCmd(cmd);
-                    console.log(result);
+                    if(result.length == 0) {
+                         console.log("Nothing?")
+                        break;
+                    }
+                    const parsed = result[0];
+                    const findcmd = this.commands.filter((com) => com.name == parsed.command);
+                    if(findcmd.length == 0) {
+                         console.log("Command not found!", parsed)
+                        break;
+                    }
+                    const foundCmd = findcmd[0];
+                    //console.log(this.commands.filter((com) => com.name == parsed.command));
+                    
+                    const runCmd = foundCmd.cmd.call(this, ...parsed.args)
+                    console.log(runCmd);
+                    break;
+                    //console.log(result);
 
 
                     break;
@@ -48,9 +82,28 @@ class PromptJS {
 
     }
 
+     requireUncached(module){
+        delete require.cache[require.resolve(module)]
+        return require(module)
+    }
+
+    loadCommands() {
+        
+        const arr = [];
+        cmdsDir.forEach((cmd) => {
+            arr.push({
+                name: cmd.replace(".js", ""),
+                file: `commands/${cmd}`,
+                cmd: require(path.join(__dirname, `commands/${cmd}`))
+            })
+        })
+        return arr;
+        
+    }
+
     changePWD(pwd) {
         this.pwd = pwd;
-        this.rl.setprompt();
+        this.setprompt();
     }
 
     setprompt() {
