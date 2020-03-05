@@ -3,4 +3,6 @@ const PromptJS = require("promptjs");
 
 
 
-const prompt = new PromptJS();
+const prompt = new PromptJS({
+    commands: []
+});

@@ -3,12 +3,31 @@ const readline = require('readline');
 const chalk = require("chalk");
 
 class PromptJS {
-    constructor() {
+    constructor({commands}) {
         this.name = "PromptJS";
         this.version = "1.0";
         this.user = {
             username: process.env.USER || process.env.USERNAME.toLowerCase()
         }
+
+        this.commands =  {};
+
+        const fs = require("fs")
+        const path = require("path")
+       // console.log(__dirname)
+        const cmdsDir = fs.readdirSync(path.join(__dirname, "commands"))
+       // console.log(cmdsDir)
+        cmdsDir.forEach((file) => {
+            if(file.endsWith(".js")) {
+                this.commands[file.replace(".js", "")] = require(`./commands/${file}`);
+            }
+        })
+        
+        Object.keys(commands).forEach((key) => {
+            this.commands[key] = commands[key];
+        })
+        //console.log(this.commands)
+
         this.pwd = `/`
         this.prompt = "";
         this.rl = readline.createInterface({
@@ -24,7 +43,7 @@ class PromptJS {
 
         this.rl.prompt();
 
-        this.rl.on('line', (line) => {
+        this.rl.on('line', async (line) => {
             const cmd = line.trim();
             switch (line.trim()) {
                 case '.quit':
@@ -32,9 +51,21 @@ class PromptJS {
                     return process.exit(0);
                     break;
                 default:
-                    const result = this.parseCmd(cmd);
-                    console.log(result);
+                    const res = this.parseCmd(cmd)[0];
+                 //   console.log(res);
+                 try {
+                     var r =  await this.run(res.command, res.args)
+                 } catch(e) {
+                    if(!e.status) {
+                        return console.log(e.res)
+                    }
+                 }
+                 
+                 if(r.status) {
+                    console.log(r.res)
+                }
 
+                   
 
                     break;
             }
@@ -109,6 +140,74 @@ class PromptJS {
         
 
        // console.log(parse(cmd))
+    }
+
+
+    run(command, args) {
+        return new Promise( async (resolve, reject) => {
+          //  console.log(this.commands, command, args)
+            if(!this.commands.hasOwnProperty(command)) {
+                return reject(404);
+            }
+            const cmd = this.commands[command];
+           
+
+            var notType = [];
+            if(args.length !== 0) { 
+                if(cmd.hasOwnProperty('arguments')) { 
+                    //console.log(this.commands.arguments)
+                    if(cmd.arguments.hasOwnProperty('typeof')) {
+                        
+                        args = args.filter((arg, i) => {
+                            if(typeof arg == cmd.arguments.typeof) {
+                                return true;
+                            } else {
+                  //              console.log("not!", arg, i)
+                                notType.push({arg, i, typeof: cmd.arguments.typeof});
+                            }
+                        })
+                //        console.log("testing arguments", args);
+                    } else if(typeof cmd.arguments[0] !== 'undefined') {
+                        var newargs = {};
+                        args.forEach((arg, i) => {
+                            if(typeof arg == cmd.arguments[i].typeof) {
+                                newargs[cmd.arguments[i].name] = arg;
+                            } else {
+                                notType.push({arg, i, typeof: cmd.arguments[i].typeof})
+                            }
+                            
+                        })
+                        args = newargs;
+                    }
+                }
+            } else {
+                
+               // console.log("no arguments!")
+            }
+            //return;
+            //console.log(args, notType);
+            if(typeof notType !== 'undefined' && notType.length > 0) {
+           //     console.log(notType);
+                var warnmsg = "";
+                notType.forEach((type) => {
+                    warnmsg += `The argument at [${type.i}] in the command ${command} is not typeof ${type.typeof}. Given type ${typeof type.arg}.\n`                    
+                })
+                const warnings = `\`\`\` ${warnmsg} \`\`\``
+                return reject({status: false, message: warnmsg})
+                return this.send(warnmsg, msg.channel)
+            }
+
+            try {
+               var res = await cmd.handler.call(this, args);
+            } catch(e) {
+                return reject({status: false, res: e});
+            }
+        //    console.log(res, cmd, "res")
+
+            return resolve({status: true, res: res});
+
+        });
+
     }
 }
 
